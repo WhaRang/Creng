@@ -1,0 +1,62 @@
+#include "Texture.h"
+
+Texture::Texture() : Texture("") {
+}
+
+Texture::Texture(const char* filePath) {
+	this->textureID = 0;
+	this->width = 0;
+	this->height = 0;
+	this->bitDepth = 0;
+	this->filePath = filePath;
+}
+
+Texture::~Texture() {
+	ClearTexture();
+}
+
+void Texture::LoadTexture() {
+
+	unsigned char* textureData = stbi_load(filePath, &width, &height, &bitDepth, 0);
+
+	if (!textureData) {
+		printf("Failed to find: %s\n", filePath);
+		return;
+	}
+
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// Wrapping the texture when going outside of the texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// Closer/further from the image
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// stbi_load is loading data in RGB, thus GL_RGB should be used
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(textureData);
+}
+
+void Texture::ClearTexture() {
+
+	glDeleteTextures(1, &textureID);
+	
+	this->textureID = 0;
+	this->width = 0;
+	this->height = 0;
+	this->bitDepth = 0;
+	this->filePath = "";
+}
+
+void Texture::UseTexture() {
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+}
