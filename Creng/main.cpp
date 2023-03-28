@@ -12,12 +12,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Mesh.h"
+#include "Resources.h"
+
+#include "Mesh.h" 
 #include "Shader.h"
 #include "Window.h"
 #include "Camera.h"
 #include "Texture.h"
-#include "Light.h"
 #include "Material.h"
 
 const GLint WIDTH = 1920, HEIGHT = 1080;
@@ -25,13 +26,16 @@ const float toRadians = 3.14159265f / 180.0f;
 
 Camera* camera;
 Window* mainWindow;
-Light* mainLight;
+
+DirectionalLight* mainLight;
+PointLight pointLights[MAX_POINT_LIGHTS];
 
 Material* shinyMaterial;
 Material* dullMaterial;
 
 Texture* faceTexture;
 Texture* skullTexture;
+Texture* dirtTexture;
 
 std::vector<Mesh*> meshList;
 std::vector<Shader*> shaderList;
@@ -89,20 +93,36 @@ void CreateObjects() {
 	GLfloat verticies[] = {
 		//	 x	    y	  z			u	  v			nx    ny    nz
 			-1.0f, -1.0f, -0.6f,	0.0f, 0.0f,		0.0f, 0.0f, 0.0f,
-			 0.0f, -1.0f, 1.0f,		0.5f, 1.0f,		0.0f, 0.0f, 0.0f,
+			 0.0f, -1.0f,  1.0f,	0.5f, 1.0f,		0.0f, 0.0f, 0.0f,
 			 1.0f, -1.0f, -0.6f,	1.0f, 0.0f,		0.0f, 0.0f, 0.0f,
-			 0.0f,  1.0f, 0.0f,		0.5f, 0.0f,		0.0f, 0.0f, 0.0f
+			 0.0f,  1.0f,  0.0f,	0.5f, 0.0f,		0.0f, 0.0f, 0.0f
+	};
+
+	unsigned int floorIndicies[] = {
+		0, 2, 1,
+		1, 2, 3
+	};
+
+	GLfloat floorVerticies[] = {
+		-10.0f, 0.0f, -10.0f,	0.0f,  0.0f,	0.0f, -1.0f, 0.0f,
+		 10.0f, 0.0f, -10.0f,	10.0f, 0.0f,	0.0f, -1.0f, 0.0f,
+		-10.0f, 0.0f,  10.0f,   0.0f,  10.0f,	0.0f, -1.0f, 0.0f,
+		 10.0f, 0.0f,  10.0f,   10.0f, 10.0f,	0.0f, -1.0f, 0.0f
 	};
 
 	CalcAverageNormals(indicies, 12, verticies, 32, 8, 5);
 
-	Mesh* mesh1 = new Mesh();
-	mesh1->CreateMesh(verticies, indicies, 32, 12);
-	meshList.push_back(mesh1);
+	Mesh* pyramid1 = new Mesh();
+	pyramid1->CreateMesh(verticies, indicies, 32, 12);
+	meshList.push_back(pyramid1);
 
-	Mesh* mesh2 = new Mesh();
-	mesh2->CreateMesh(verticies, indicies, 32, 12);
-	meshList.push_back(mesh2);
+	Mesh* pyramid2 = new Mesh();
+	pyramid2->CreateMesh(verticies, indicies, 32, 12);
+	meshList.push_back(pyramid2);
+
+	Mesh* floorMesh = new Mesh();
+	floorMesh->CreateMesh(floorVerticies, floorIndicies, 32, 6);
+	meshList.push_back(floorMesh);
 }
 
 void CreateShaders() {
@@ -125,16 +145,34 @@ int main() {
 	faceTexture->LoadTexture();
 	skullTexture = new Texture("Textures/Skulls.jpg");
 	skullTexture->LoadTexture();
+	dirtTexture = new Texture("Textures/Dirt.jpg");
+	dirtTexture->LoadTexture();
 
-	shinyMaterial = new Material(1.0f, 32.0f);
+	shinyMaterial = new Material(4.0f, 256.0f);
 	dullMaterial = new Material(1.0f, 4.0f);
 
-	mainLight = new Light(
-		1.0f, 1.0f, 1.0f, 0.1f,
-		2.0f, -1.0f, -2.0f, 0.1f);
+	mainLight = new DirectionalLight(
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		0.0f, 0.0f,
+		glm::vec3(2.0f, -1.0f, -2.0f));
+
+	unsigned int pointLightCount = 0;
+
+	pointLights[pointLightCount] = PointLight(
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		0.0f, 0.4f,
+		glm::vec3(-4.0, 0.0f, 0.0f),
+		0.3f, 0.2f, 0.1f);
+	pointLightCount++;
+
+	pointLights[pointLightCount] = PointLight(
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		0.0f, 1.0f,
+		glm::vec3(4.0, 2.0f, 0.0f),
+		0.3f, 0.1f, 0.1f);
+	pointLightCount++;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0;
-	GLuint uniformAmbientIntensity = 0, uniformAmbientColor = 0, uniformDirection = 0, uniformDiffuseIntensity = 0;
 	GLuint uniformSpecularIntensity = 0, uniformShininess = 0;
 
 	glm::mat4 projection = glm::perspective(45.0f, mainWindow->GetBufferWidth() / mainWindow->GetBufferHeight(), 0.1f, 100.0f);
@@ -166,18 +204,13 @@ int main() {
 		uniformView = shaderList[0]->GetViewLocation();
 		uniformEyePosition = shaderList[0]->GetEyePositionLocation();
 
-		// Lighting uniform values
-		uniformAmbientColor = shaderList[0]->GetAmbientColorLocation();
-		uniformAmbientIntensity = shaderList[0]->GetAmbientIntensityLocation();
-		uniformDirection = shaderList[0]->GetDirectionLocation();
-		uniformDiffuseIntensity = shaderList[0]->GetDiffuseIntensityLocation();
-
 		// Material uniform values
 		uniformSpecularIntensity = shaderList[0]->GetSpecularIntensityLocation();
 		uniformShininess = shaderList[0]->GetShininessLocation();
 
 		// Using the light
-		mainLight->UseLight(uniformAmbientIntensity, uniformAmbientColor, uniformDiffuseIntensity, uniformDirection);
+		shaderList[0]->SetDirectionalLight(mainLight);
+		shaderList[0]->SetPointLights(pointLights, pointLightCount);
 
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera->CalculateViewMatrix()));
@@ -185,9 +218,7 @@ int main() {
 
 		glm::mat4 model(1.0f);
 
-		// Order is IMPORTANT. If we do rotation or scale first, translation will be rotated or scaled too.
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
-		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		faceTexture->UseTexture();
 		shinyMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
@@ -195,11 +226,17 @@ int main() {
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 4.0f, -2.5f));
-		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		skullTexture->UseTexture();
 		dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[1]->RenderMesh();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		dirtTexture->UseTexture();
+		dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
+		meshList[2]->RenderMesh();
 
 		glUseProgram(0);
 

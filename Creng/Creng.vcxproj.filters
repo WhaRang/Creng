@@ -25,6 +25,12 @@
     <ClCompile Include="Material.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -46,6 +52,15 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
