@@ -17,12 +17,19 @@
 #include "Window.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "Light.h"
+#include "Material.h"
 
-const GLint WIDTH = 800, HEIGHT = 600;
+const GLint WIDTH = 1920, HEIGHT = 1080;
 const float toRadians = 3.14159265f / 180.0f;
 
 Camera* camera;
 Window* mainWindow;
+Light* mainLight;
+
+Material* shinyMaterial;
+Material* dullMaterial;
+
 Texture* faceTexture;
 Texture* skullTexture;
 
@@ -35,6 +42,41 @@ GLfloat lastTime = 0.0f;
 static const char* vShader = "Shaders/shader.vert";
 static const char* fShader = "Shaders/shader.frag";
 
+void CalcAverageNormals(unsigned int* indicies, unsigned int indiceCount, GLfloat* verticies,
+	unsigned int verticeCount, unsigned int vertexLenght, unsigned int normalOffset) {
+
+	for (size_t i = 0; i < indiceCount; i += 3) {
+
+		unsigned int in0 = indicies[i] * vertexLenght;
+		unsigned int in1 = indicies[i + 1] * vertexLenght;
+		unsigned int in2 = indicies[i + 2] * vertexLenght;
+
+		glm::vec3 v1(verticies[in1] - verticies[in0], verticies[in1 + 1] - verticies[in0 + 1], verticies[in1 + 2] - verticies[in0 + 2]);
+		glm::vec3 v2(verticies[in2] - verticies[in0], verticies[in2 + 1] - verticies[in0 + 1], verticies[in2 + 2] - verticies[in0 + 2]);
+
+		glm::vec3 normal = glm::cross(v1, v2);
+		normal = glm::normalize(normal);
+
+		in0 += normalOffset; in1 += normalOffset; in2 += normalOffset;
+
+		verticies[in0] += normal.x; verticies[in0 + 1] += normal.y; verticies[in0 + 2] += normal.z;
+		verticies[in1] += normal.x; verticies[in1 + 1] += normal.y; verticies[in1 + 2] += normal.z;
+		verticies[in2] += normal.x; verticies[in2 + 1] += normal.y; verticies[in2 + 2] += normal.z;
+	}
+
+	for (size_t i = 0; i < verticeCount / vertexLenght; i++) {
+
+		unsigned int individualNormalOffset = i * vertexLenght + normalOffset;
+
+		glm::vec3 normal(verticies[individualNormalOffset], verticies[individualNormalOffset + 1], verticies[individualNormalOffset + 2]);
+		normal = glm::normalize(normal);
+
+		verticies[individualNormalOffset] = normal.x;
+		verticies[individualNormalOffset + 1] = normal.y;
+		verticies[individualNormalOffset + 2] = normal.z;
+	}
+}
+
 void CreateObjects() {
 
 	unsigned int indicies[] = {
@@ -45,19 +87,21 @@ void CreateObjects() {
 	};
 
 	GLfloat verticies[] = {
-	//	x	   y	  z			u	  v
-		-1.0f, -1.0f, 0.0f,		0.0f, 0.0f,
-		 0.0f, -1.0f, 1.0f,		0.5f, 1.0f,
-		 1.0f, -1.0f, 0.0f,		1.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f,		0.5f, 0.0f
+		//	 x	    y	  z			u	  v			nx    ny    nz
+			-1.0f, -1.0f, -0.6f,	0.0f, 0.0f,		0.0f, 0.0f, 0.0f,
+			 0.0f, -1.0f, 1.0f,		0.5f, 1.0f,		0.0f, 0.0f, 0.0f,
+			 1.0f, -1.0f, -0.6f,	1.0f, 0.0f,		0.0f, 0.0f, 0.0f,
+			 0.0f,  1.0f, 0.0f,		0.5f, 0.0f,		0.0f, 0.0f, 0.0f
 	};
 
+	CalcAverageNormals(indicies, 12, verticies, 32, 8, 5);
+
 	Mesh* mesh1 = new Mesh();
-	mesh1->CreateMesh(verticies, indicies, 20, 12);
+	mesh1->CreateMesh(verticies, indicies, 32, 12);
 	meshList.push_back(mesh1);
 
 	Mesh* mesh2 = new Mesh();
-	mesh2->CreateMesh(verticies, indicies, 20, 12);
+	mesh2->CreateMesh(verticies, indicies, 32, 12);
 	meshList.push_back(mesh2);
 }
 
@@ -78,13 +122,21 @@ int main() {
 	camera = new Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 0.3f);
 
 	faceTexture = new Texture("Textures/Face.jpg");
-	faceTexture->LoadTexture(); 
+	faceTexture->LoadTexture();
 	skullTexture = new Texture("Textures/Skulls.jpg");
 	skullTexture->LoadTexture();
 
-	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0;
+	shinyMaterial = new Material(1.0f, 32.0f);
+	dullMaterial = new Material(1.0f, 4.0f);
 
-	// Projection perspective
+	mainLight = new Light(
+		1.0f, 1.0f, 1.0f, 0.1f,
+		2.0f, -1.0f, -2.0f, 0.1f);
+
+	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0;
+	GLuint uniformAmbientIntensity = 0, uniformAmbientColor = 0, uniformDirection = 0, uniformDiffuseIntensity = 0;
+	GLuint uniformSpecularIntensity = 0, uniformShininess = 0;
+
 	glm::mat4 projection = glm::perspective(45.0f, mainWindow->GetBufferWidth() / mainWindow->GetBufferHeight(), 0.1f, 100.0f);
 
 	// Loop until window closed
@@ -106,27 +158,47 @@ int main() {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw triangle
 		shaderList[0]->UseShader();
+
+		// World uniform values
 		uniformModel = shaderList[0]->GetModelLocation();
 		uniformProjection = shaderList[0]->GetProjectionLocation();
 		uniformView = shaderList[0]->GetViewLocation();
+		uniformEyePosition = shaderList[0]->GetEyePositionLocation();
 
-		glm::mat4 model(1.0f);
-		// Order is IMPORTANT. If we do rotation or scale first, translation will be rotated or scaled too.
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
-		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		// Lighting uniform values
+		uniformAmbientColor = shaderList[0]->GetAmbientColorLocation();
+		uniformAmbientIntensity = shaderList[0]->GetAmbientIntensityLocation();
+		uniformDirection = shaderList[0]->GetDirectionLocation();
+		uniformDiffuseIntensity = shaderList[0]->GetDiffuseIntensityLocation();
+
+		// Material uniform values
+		uniformSpecularIntensity = shaderList[0]->GetSpecularIntensityLocation();
+		uniformShininess = shaderList[0]->GetShininessLocation();
+
+		// Using the light
+		mainLight->UseLight(uniformAmbientIntensity, uniformAmbientColor, uniformDiffuseIntensity, uniformDirection);
+
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera->CalculateViewMatrix()));
+		glUniform3f(uniformEyePosition, camera->GetPosition().x, camera->GetPosition().y, camera->GetPosition().z);
+
+		glm::mat4 model(1.0f);
+
+		// Order is IMPORTANT. If we do rotation or scale first, translation will be rotated or scaled too.
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
+		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		faceTexture->UseTexture();
+		shinyMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[0]->RenderMesh();
 
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 1.0f, -2.5f));
-		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.0f, -2.5f));
+		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		skullTexture->UseTexture();
+		dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[1]->RenderMesh();
 
 		glUseProgram(0);

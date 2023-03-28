@@ -19,6 +19,12 @@
     <ClCompile Include="Window.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -34,6 +40,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Window.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

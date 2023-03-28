@@ -24,10 +24,17 @@ void Mesh::CreateMesh(GLfloat* verticies, unsigned int* indicies, unsigned int v
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies[0]) * verticiesCount, verticies, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(verticies[0]) * 5, 0);
+	// Getting vertex position to vertex shader throught location = 0
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(verticies[0]) * 8, 0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(verticies[0]) * 5, (void*)(sizeof(verticies[0]) * 3));
+
+	// Getting u and v for texture to vertex shader throught location = 1
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(verticies[0]) * 8, (void*)(sizeof(verticies[0]) * 3));
 	glEnableVertexAttribArray(1);
+
+	// Getting normals to vertex shader throught location = 2
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(verticies[0]) * 8, (void*)(sizeof(verticies[0]) * 5));
+	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
