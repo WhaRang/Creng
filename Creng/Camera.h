@@ -21,6 +21,7 @@ public:
 	glm::mat4 CalculateViewMatrix();
 
 	glm::vec3 GetPosition();
+	glm::vec3 GetDirection();
 
 private:
 

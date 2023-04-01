@@ -7,7 +7,7 @@ DirectionalLight::DirectionalLight() :
 DirectionalLight::DirectionalLight(glm::vec3 color, GLfloat ambientIntensity, GLfloat diffuseIntensity, glm::vec3 direction)
 	: Light(color, ambientIntensity, diffuseIntensity) {
 
-	this->direction = direction;
+	this->direction = glm::normalize(direction);
 }
 
 DirectionalLight::~DirectionalLight() {

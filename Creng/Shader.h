@@ -10,7 +10,7 @@
 #include "Resources.h"
 
 #include "DirectionalLight.h"
-#include "PointLight.h"
+#include "SpotLight.h"
 
 class Shader {
 
@@ -38,6 +38,7 @@ public:
 
 	void SetDirectionalLight(DirectionalLight* light);
 	void SetPointLights(PointLight* light, unsigned int lightCount);
+	void SetSpotLights(SpotLight* light, unsigned int lightCount);
 
 private:
 
@@ -58,13 +59,31 @@ private:
 		GLuint exponent;
 	} uniformPointLight[MAX_POINT_LIGHTS];
 
-	int pointLightCount;
+	struct {
+		GLuint color;
+		GLuint ambientIntensity;
+		GLuint diffuseIntensity;
+		GLuint position;
+		GLuint direction;
+		GLuint constant;
+		GLuint linear;
+		GLuint exponent;
+		GLuint edge;
+	} uniformSpotLight[MAX_SPOT_LIGHTS];
+
+	int pointLightCount, spotLightCount;
 
 	GLuint shaderID, uniformProjection, uniformModel, uniformView, uniformEyePosition;
 	GLuint uniformSpecularIntensity, uniformShininess;
-	GLuint uniformPointLightCount;
+	GLuint uniformPointLightCount, uniformSpotLightCount;
 
 	void CompileShader(const char* vertexCode, const char* fragmentCode);
+	void CompileTransform();
+	void CompileDirectionalLight();
+	void CompileMaterials();
+	void CompilePointLight();
+	void CompileSpotLight();
+
 	void AddShader(GLuint program, const char* shaderCode, GLenum shaderType);
 
 	std::string ReadFile(const char* path);

@@ -16,7 +16,7 @@ public:
 		GLuint diffuseIntensityLocation, GLuint positionLocation,
 		GLuint constantLocation, GLuint linearLocation, GLuint exponentLocation);
 
-private:
+protected:
 
 	glm::vec3 position;
 
