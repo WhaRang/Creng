@@ -34,6 +34,9 @@
     <ClCompile Include="SpotLight.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -67,6 +70,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="SpotLight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

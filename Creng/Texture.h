@@ -13,7 +13,8 @@ public:
 	Texture(const char* filePath);
 	~Texture();
 
-	void LoadTexture();
+	bool LoadTexture(bool alpha);
+
 	void ClearTexture();
 	void UseTexture();
 

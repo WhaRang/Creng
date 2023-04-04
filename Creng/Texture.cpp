@@ -15,13 +15,13 @@ Texture::~Texture() {
 	ClearTexture();
 }
 
-void Texture::LoadTexture() {
+bool Texture::LoadTexture(bool alpha) {
 
 	unsigned char* textureData = stbi_load(filePath, &width, &height, &bitDepth, 0);
 
 	if (!textureData) {
 		printf("Failed to find: %s\n", filePath);
-		return;
+		return false;
 	}
 
 	glGenTextures(1, &textureID);
@@ -34,14 +34,18 @@ void Texture::LoadTexture() {
 	// Closer/further from the image
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	// depending on demand, aplha channel will be included
+	GLuint format = alpha ? GL_RGBA : GL_RGB;
 
-	// stbi_load is loading data in RGB, thus GL_RGB should be used
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, textureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	stbi_image_free(textureData);
+
+	return true;
 }
 
 void Texture::ClearTexture() {

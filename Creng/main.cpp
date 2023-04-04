@@ -14,12 +14,13 @@
 
 #include "Resources.h"
 
-#include "Mesh.h" 
 #include "Shader.h"
 #include "Window.h"
 #include "Camera.h"
-#include "Texture.h"
+#include "Model.h"
 #include "Material.h"
+
+#include <assimp/Importer.hpp>
 
 const GLint WIDTH = 1920, HEIGHT = 1080;
 const float toRadians = 3.14159265f / 180.0f;
@@ -37,6 +38,8 @@ Material* dullMaterial;
 Texture* faceTexture;
 Texture* skullTexture;
 Texture* dirtTexture;
+
+Model* room;
 
 std::vector<Mesh*> meshList;
 std::vector<Shader*> shaderList;
@@ -142,15 +145,18 @@ int main() {
 
 	camera = new Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 0.3f);
 
-	faceTexture = new Texture("Textures/Face.jpg");
-	faceTexture->LoadTexture();
-	skullTexture = new Texture("Textures/Skulls.jpg");
-	skullTexture->LoadTexture();
-	dirtTexture = new Texture("Textures/Dirt.jpg");
-	dirtTexture->LoadTexture();
+	faceTexture = new Texture("Textures/Default/Face.jpg");
+	faceTexture->LoadTexture(false);
+	skullTexture = new Texture("Textures/Default/Skulls.jpg");
+	skullTexture->LoadTexture(false);
+	dirtTexture = new Texture("Textures/Default/Dirt.jpg");
+	dirtTexture->LoadTexture(false);
 
 	shinyMaterial = new Material(4.0f, 256.0f);
 	dullMaterial = new Material(1.0f, 4.0f);
+
+	room = new Model("Room", false);
+	room->LoadModel("Models/Room/Room.obj");
 
 	mainLight = new DirectionalLight(
 		glm::vec3(1.0f, 1.0f, 1.0f),
@@ -263,6 +269,12 @@ int main() {
 		dirtTexture->UseTexture();
 		dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[2]->RenderMesh();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -2.0f, -4.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
+		room->RenderModel();
 
 		glUseProgram(0);
 
