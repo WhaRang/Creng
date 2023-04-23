@@ -1,11 +1,11 @@
 #include "PointLight.h"
 
-PointLight::PointLight() : PointLight(glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.0f, glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 1.0f) {
+PointLight::PointLight() {
 }
 
 PointLight::PointLight(glm::vec3 color, GLfloat ambientIntensity, GLfloat diffuseIntensity,
 	glm::vec3 position, GLfloat constant, GLfloat linear, GLfloat exponent)
-	: Light(color, ambientIntensity, diffuseIntensity) {
+	: Light(1024.0f, 1024.0f, color, ambientIntensity, diffuseIntensity) {
 
 	this->position = position;
 	this->constant = constant;

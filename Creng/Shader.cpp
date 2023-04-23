@@ -137,6 +137,18 @@ void Shader::SetSpotLights(SpotLight* light, unsigned int lightCount) {
 	}
 }
 
+void Shader::SetTextureUnit(GLuint textureUnit) {
+	glUniform1i(uniformTexture, textureUnit);
+}
+
+void Shader::SetDirectionalShadowMap(GLuint textureUnit) {
+	glUniform1i(uniformDirectionalShadowMap, textureUnit);
+}
+
+void Shader::SetDirectionalLightTransform(glm::mat4* transform) {
+	glUniformMatrix4fv(uniformDirectionalLightTransform, 1, GL_FALSE, glm::value_ptr(*transform));
+}
+
 void Shader::CompileShader(const char* vertexCode, const char* fragmentCode) {
 
 	shaderID = glCreateProgram();
@@ -173,6 +185,7 @@ void Shader::CompileShader(const char* vertexCode, const char* fragmentCode) {
 	CompileMaterials();
 	CompilePointLight();
 	CompileSpotLight();
+	CompileShadow();
 }
 
 void Shader::CompileTransform() {
@@ -262,6 +275,13 @@ void Shader::CompileSpotLight() {
 		snprintf(locBuff, sizeof(locBuff), "spotLights[%d].edge", i);
 		uniformSpotLight[i].edge = glGetUniformLocation(shaderID, locBuff);
 	}
+}
+
+void Shader::CompileShadow() {
+
+	uniformTexture = glGetUniformLocation(shaderID, "texSamp");
+	uniformDirectionalLightTransform = glGetUniformLocation(shaderID, "dirLightTransform");
+	uniformDirectionalShadowMap = glGetUniformLocation(shaderID, "dirShadowMap");
 }
 
 void Shader::AddShader(GLuint program, const char* shaderCode, GLenum shaderType) {
