@@ -10,8 +10,16 @@ Shader::Shader() {
 	spotLightCount = 0;
 }
 
+Shader::~Shader() {
+	ClearShader();
+}
+
 void Shader::CreateFromString(const char* vertexCode, const char* fragmentCode) {
 	CompileShader(vertexCode, fragmentCode);
+}
+
+void Shader::CreateFromString(const char* vertexCode, const char* geometryCode, const char* fragmentCode) {
+	CompileShader(vertexCode, geometryCode, fragmentCode);
 }
 
 void Shader::CreateFromFiles(const char* vertexPath, const char* fragmentPath) {
@@ -23,6 +31,19 @@ void Shader::CreateFromFiles(const char* vertexPath, const char* fragmentPath) {
 	const char* fragmentCode = fragmentString.c_str();
 
 	CreateFromString(vertextCode, fragmentCode);
+}
+
+void Shader::CreateFromFiles(const char* vertexPath, const char* geometryPath, const char* fragmentPath) {
+
+	std::string vertexString = ReadFile(vertexPath);
+	std::string geometryString = ReadFile(geometryPath);
+	std::string fragmentString = ReadFile(fragmentPath);
+
+	const char* vertextCode = vertexString.c_str();
+	const char* geometryCode = geometryString.c_str();
+	const char* fragmentCode = fragmentString.c_str();
+
+	CreateFromString(vertextCode, geometryCode, fragmentCode);
 }
 
 std::string Shader::ReadFile(const char* path) {
@@ -100,6 +121,14 @@ GLuint Shader::GetShininessLocation() {
 	return uniformShininess;
 }
 
+GLuint Shader::GetOmniLightPosLocation() {
+	return uniformOmniLightPos;
+}
+
+GLuint Shader::GetFarPlaneLocation() {
+	return uniformFarPlane;
+}
+
 void Shader::SetDirectionalLight(DirectionalLight* light) {
 	light->UseLight(uniformDirectionalLight.ambientIntensity, uniformDirectionalLight.color,
 		uniformDirectionalLight.diffuseIntensity, uniformDirectionalLight.direction);
@@ -149,6 +178,38 @@ void Shader::SetDirectionalLightTransform(glm::mat4* transform) {
 	glUniformMatrix4fv(uniformDirectionalLightTransform, 1, GL_FALSE, glm::value_ptr(*transform));
 }
 
+void Shader::SetLightMatrices(std::vector<glm::mat4> lightMatrices) {
+	for (size_t i = 0; i < 6; i++) {
+		glUniformMatrix4fv(uniformLightMatrices[i], 1, GL_FALSE, glm::value_ptr(lightMatrices[i]));
+	}
+}
+
+void Shader::AddShader(GLuint program, const char* shaderCode, GLenum shaderType) {
+
+	GLuint newShader = glCreateShader(shaderType);
+
+	const GLchar* code[1];
+	code[0] = shaderCode;
+
+	GLint codeLength[1];
+	codeLength[0] = strlen(shaderCode);
+
+	glShaderSource(newShader, 1, code, codeLength);
+	glCompileShader(newShader);
+
+	GLint result = 0;
+	GLchar eLog[1024] = { 0 };
+
+	glGetShaderiv(newShader, GL_COMPILE_STATUS, &result);
+	if (!result) {
+		glGetShaderInfoLog(newShader, sizeof(eLog), NULL, eLog);
+		printf("Error compile the %d shader: '%s'\n", shaderType, eLog);
+		return;
+	}
+
+	glAttachShader(program, newShader);
+}
+
 void Shader::CompileShader(const char* vertexCode, const char* fragmentCode) {
 
 	shaderID = glCreateProgram();
@@ -161,6 +222,27 @@ void Shader::CompileShader(const char* vertexCode, const char* fragmentCode) {
 	AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
 	AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
 
+	CompileProgram();
+}
+
+void Shader::CompileShader(const char* vertexCode, const char* geometryCode, const char* fragmentCode) {
+
+	shaderID = glCreateProgram();
+
+	if (!shaderID) {
+		printf("Error creating shader program!\n");
+		return;
+	}
+
+	AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
+	AddShader(shaderID, geometryCode, GL_GEOMETRY_SHADER);
+	AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
+
+	CompileProgram();
+}
+
+void Shader::CompileProgram()
+{
 	GLint result = 0;
 	GLchar eLog[1024] = { 0 };
 
@@ -282,34 +364,15 @@ void Shader::CompileShadow() {
 	uniformTexture = glGetUniformLocation(shaderID, "texSamp");
 	uniformDirectionalLightTransform = glGetUniformLocation(shaderID, "dirLightTransform");
 	uniformDirectionalShadowMap = glGetUniformLocation(shaderID, "dirShadowMap");
-}
 
-void Shader::AddShader(GLuint program, const char* shaderCode, GLenum shaderType) {
+	uniformOmniLightPos = glGetUniformLocation(shaderID, "lightPos");
+	uniformFarPlane = glGetUniformLocation(shaderID, "farPlane");
 
-	GLuint newShader = glCreateShader(shaderType);
+	for (size_t i = 0; i < 6; i++) {
 
-	const GLchar* code[1];
-	code[0] = shaderCode;
+		char locBuff[128] = { '\0' };
 
-	GLint codeLength[1];
-	codeLength[0] = strlen(shaderCode);
-
-	glShaderSource(newShader, 1, code, codeLength);
-	glCompileShader(newShader);
-
-	GLint result = 0;
-	GLchar eLog[1024] = { 0 };
-
-	glGetShaderiv(newShader, GL_COMPILE_STATUS, &result);
-	if (!result) {
-		glGetShaderInfoLog(newShader, sizeof(eLog), NULL, eLog);
-		printf("Error compile the %d shader: '%s'\n", shaderType, eLog);
-		return;
+		snprintf(locBuff, sizeof(locBuff), "lightMatrices[%d]", i);
+		uniformLightMatrices[i] = glGetUniformLocation(shaderID, locBuff);
 	}
-
-	glAttachShader(program, newShader);
-}
-
-Shader::~Shader() {
-	ClearShader();
 }

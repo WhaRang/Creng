@@ -3,7 +3,8 @@
 DirectionalLight::DirectionalLight() {
 }
 
-DirectionalLight::DirectionalLight(GLfloat shadowWidth, GLfloat shadowHeight,
+DirectionalLight::DirectionalLight(
+	GLfloat shadowWidth, GLfloat shadowHeight,
 	glm::vec3 color, GLfloat ambientIntensity, GLfloat diffuseIntensity,
 	glm::vec3 direction)
 	: Light(shadowWidth, shadowHeight, color, ambientIntensity, diffuseIntensity) {

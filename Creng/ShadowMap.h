@@ -18,7 +18,7 @@ public:
 	GLuint GetWidth();
 	GLuint GetHeight();
 
-private:
+protected:
 
 	GLuint FBO, shadowMap;
 	GLuint width, height;
