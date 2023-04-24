@@ -377,8 +377,6 @@ int main() {
 		// Swaps buffer to the one that can be seen
 		mainWindow->SwapBuffers();
 
-		std::cout << Time::deltaTime << std::endl;
-
 		Time::StopUpdate();
 	}
 
