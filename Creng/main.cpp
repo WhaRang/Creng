@@ -19,6 +19,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Material.h"
+#include "Time.h"
 
 #include <assimp/Importer.hpp>
 
@@ -181,7 +182,7 @@ void RenderScene() {
 	dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 	meshList[2]->RenderMesh();
 
-	girlAngle += 0.1f;
+	girlAngle += 5.0f * Time::deltaTime;
 	if (girlAngle > 360.0f) {
 		girlAngle = 0.1f;
 	}
@@ -352,16 +353,13 @@ int main() {
 	// Loop until window closed
 	while (!mainWindow->GetShouldClose()) {
 
-		// Calculating delta time
-		GLfloat currTime = glfwGetTime();
-		deltaTime = currTime - lastTime;
-		lastTime = currTime;
+		Time::StartUpdate();
 
 		// Get + Handle user input events
 		glfwPollEvents();
 
 		// Getting the keys to move the camera
-		camera->KeyControl(mainWindow->GetKeys(), deltaTime);
+		camera->KeyControl(mainWindow->GetKeys(), Time::deltaTime);
 		camera->MouseControl(mainWindow->GetAndResetXChange(), mainWindow->GetAndResetYChange());
 
 		// Render passes
@@ -378,6 +376,10 @@ int main() {
 
 		// Swaps buffer to the one that can be seen
 		mainWindow->SwapBuffers();
+
+		std::cout << Time::deltaTime << std::endl;
+
+		Time::StopUpdate();
 	}
 
 	return 0;

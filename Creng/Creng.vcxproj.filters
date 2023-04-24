@@ -43,6 +43,9 @@
     <ClCompile Include="OmniShadowMap.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Time.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -85,6 +88,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="OmniShadowMap.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Time.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
