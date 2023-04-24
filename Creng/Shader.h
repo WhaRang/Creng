@@ -30,6 +30,8 @@ public:
 	void UseShader();
 	void ClearShader();
 
+	void Validate();
+
 	GLuint GetProjectionLocation();
 	GLuint GetModelLocation();
 	GLuint GetViewLocation();
@@ -44,8 +46,8 @@ public:
 	GLuint GetFarPlaneLocation();
 
 	void SetDirectionalLight(DirectionalLight* light);
-	void SetPointLights(PointLight* light, unsigned int lightCount);
-	void SetSpotLights(SpotLight* light, unsigned int lightCount);
+	void SetPointLights(PointLight* light, unsigned int lightCount, unsigned int textureUnit, unsigned int offset);
+	void SetSpotLights(SpotLight* light, unsigned int lightCount, unsigned int textureUnit, unsigned int offset);
 	void SetTextureUnit(GLuint textureUnit);
 	void SetDirectionalShadowMap(GLuint textureUnit);
 	void SetDirectionalLightTransform(glm::mat4* transform);
@@ -81,6 +83,11 @@ private:
 		GLuint exponent;
 		GLuint edge;
 	} uniformSpotLight[MAX_SPOT_LIGHTS];
+
+	struct {
+		GLuint shadowMap;
+		GLuint farPlane;
+	} uniformOmniShadowMap[MAX_POINT_LIGHTS + MAX_SPOT_LIGHTS];
 
 	int pointLightCount, spotLightCount;
 

@@ -31,6 +31,7 @@ static const char* vOSshader = "Shaders/omni_shadow_map.vert";
 static const char* gOSshader = "Shaders/omni_shadow_map.geom";
 static const char* fOSshader = "Shaders/omni_shadow_map.frag";
 
+const int TEXTURE_INDEX_OFFSET = 3;
 const GLint WIDTH = 1920, HEIGHT = 1080;
 const float toRadians = 3.14159265f / 180.0f;
 
@@ -62,9 +63,8 @@ std::vector<Shader*> shaderList;
 Shader directionalShadowShader;
 Shader omniShadowShader;
 
-GLfloat deltaTime = 0.0f;
-GLfloat lastTime = 0.0f;
 GLfloat girlAngle = 0.0f;
+GLfloat girlRotationSpeed = 0.0f;
 
 void CalcAverageNormals(unsigned int* indicies, unsigned int indiceCount, GLfloat* verticies,
 	unsigned int verticeCount, unsigned int vertexLenght, unsigned int normalOffset) {
@@ -182,7 +182,7 @@ void RenderScene() {
 	dullMaterial->UseMaterial(uniformSpecularIntensity, uniformShininess);
 	meshList[2]->RenderMesh();
 
-	girlAngle += 5.0f * Time::deltaTime;
+	girlAngle += girlRotationSpeed * Time::deltaTime;
 	if (girlAngle > 360.0f) {
 		girlAngle = 0.1f;
 	}
@@ -208,6 +208,7 @@ void DirectionalShadowMapPass(DirectionalLight* light) {
 	glm::mat4 lightTransform = light->CalculateLightTransform();
 	directionalShadowShader.SetDirectionalLightTransform(&lightTransform);
 
+	directionalShadowShader.Validate();
 	RenderScene();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -228,9 +229,9 @@ void OmniShadowMapPass(PointLight* light) {
 
 	glUniform3f(uniformOmniLightPos, light->GetPosition().x, light->GetPosition().y, light->GetPosition().z);
 	glUniform1f(uniformFarPlane, light->GetFarPlane());
-
 	omniShadowShader.SetLightMatrices(light->CalculateLightTransform());
 
+	omniShadowShader.Validate();
 	RenderScene();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -262,20 +263,22 @@ void RenderPass(glm::mat4 projMatrix, glm::mat4 viewMatrix) {
 
 	// Using the light
 	shaderList[0]->SetDirectionalLight(&mainLight);
-	shaderList[0]->SetPointLights(pointLights, pointLightCount);
-	shaderList[0]->SetSpotLights(spotLights, spotLightCount);
+	// Order matters! Should be the same as in shader
+	shaderList[0]->SetPointLights(pointLights, pointLightCount, TEXTURE_INDEX_OFFSET, 0);
+	shaderList[0]->SetSpotLights(spotLights, spotLightCount, TEXTURE_INDEX_OFFSET + pointLightCount, pointLightCount);
 
 	glm::mat4 lightTransform = mainLight.CalculateLightTransform();
 	shaderList[0]->SetDirectionalLightTransform(&lightTransform);
 
-	mainLight.GetShadowMap()->Read(GL_TEXTURE1);
-	shaderList[0]->SetTextureUnit(0);
-	shaderList[0]->SetDirectionalShadowMap(1);
+	mainLight.GetShadowMap()->Read(GL_TEXTURE2);
+	shaderList[0]->SetTextureUnit(1);
+	shaderList[0]->SetDirectionalShadowMap(2);
 
 	glm::vec3 lowerLight = camera->GetPosition();
 	lowerLight.y -= 0.2f;
 	spotLights[0].SetFlash(lowerLight, camera->GetDirection());
 
+	shaderList[0]->Validate();
 	RenderScene();
 }
 
@@ -305,14 +308,14 @@ int main() {
 	mainLight = DirectionalLight(
 		2048.0f, 2048.0f,
 		glm::vec3(1.0f, 1.0f, 1.0f),
-		0.1f, 0.6f,
+		0.0f, 0.0f,
 		glm::vec3(0.0f, -15.0f, -10.0f));
 
 	pointLights[pointLightCount] = PointLight(
 		1024.0f, 1024.0f,
 		0.01f, 100.0f,
 		glm::vec3(0.0f, 0.0f, 1.0f),
-		0.0f, 0.1f,
+		0.0f, 1.0f,
 		glm::vec3(-4.0, 0.0f, 0.0f),
 		0.3f, 0.2f, 0.1f);
 	pointLightCount++;
@@ -321,7 +324,7 @@ int main() {
 		1024.0f, 1024.0f,
 		0.01f, 100.0f,
 		glm::vec3(0.0f, 1.0f, 0.0f),
-		0.0f, 0.1f,
+		0.0f, 1.0f,
 		glm::vec3(4.0, 2.0f, 0.0f),
 		0.3f, 0.1f, 0.1f);
 	pointLightCount++;
@@ -362,6 +365,11 @@ int main() {
 		camera->KeyControl(mainWindow->GetKeys(), Time::deltaTime);
 		camera->MouseControl(mainWindow->GetAndResetXChange(), mainWindow->GetAndResetYChange());
 
+		if (mainWindow->GetKeys()[GLFW_KEY_L]) {
+			spotLights[0].Toggle();
+			mainWindow->GetKeys()[GLFW_KEY_L] = false;
+		}
+
 		// Render passes
 		DirectionalShadowMapPass(&mainLight);
 		for (size_t i = 0; i < pointLightCount; i++) {
@@ -371,8 +379,6 @@ int main() {
 			OmniShadowMapPass(&spotLights[i]);
 		}
 		RenderPass(projection, camera->CalculateViewMatrix());
-
-		glUseProgram(0);
 
 		// Swaps buffer to the one that can be seen
 		mainWindow->SwapBuffers();

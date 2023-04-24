@@ -16,6 +16,7 @@ SpotLight::SpotLight(
 	this->edge = edge;
 
 	this->cosEdge = cosf(glm::radians(edge));
+	this->isOn = true;
 }
 
 SpotLight::~SpotLight() {
@@ -26,8 +27,15 @@ void SpotLight::UseLight(GLuint ambientIntensityLocation, GLuint ambientColorLoc
 	GLuint exponentLocation, GLuint edgeLocation) {
 
 	glUniform3f(ambientColorLocation, color.r, color.g, color.b);
-	glUniform1f(ambientIntensityLocation, ambientIntensity);
-	glUniform1f(diffuseIntensityLocation, diffuseIntensity);
+
+	if (isOn) {
+		glUniform1f(ambientIntensityLocation, ambientIntensity);
+		glUniform1f(diffuseIntensityLocation, diffuseIntensity);
+	}
+	else {
+		glUniform1f(ambientIntensityLocation, 0.0f);
+		glUniform1f(diffuseIntensityLocation, 0.0f);
+	}
 
 	glUniform3f(positionLocation, position.x, position.y, position.z);
 
@@ -42,4 +50,8 @@ void SpotLight::UseLight(GLuint ambientIntensityLocation, GLuint ambientColorLoc
 void SpotLight::SetFlash(glm::vec3 position, glm::vec3 direction) {
 	this->position = position;
 	this->direction = direction;
+}
+
+void SpotLight::Toggle() {
+	isOn = !isOn;
 }

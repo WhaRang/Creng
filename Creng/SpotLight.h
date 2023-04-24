@@ -24,11 +24,15 @@ public:
 
 	void SetFlash(glm::vec3 position, glm::vec3 direction);
 
+	void Toggle();
+
 private:
 
 	glm::vec3 direction;
 
 	GLfloat edge, cosEdge;
+
+	bool isOn;
 
 };
 
