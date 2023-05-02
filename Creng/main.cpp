@@ -14,6 +14,7 @@
 
 #include "Resources.h"
 
+#include "Skybox.h"
 #include "Shader.h"
 #include "Window.h"
 #include "Camera.h"
@@ -62,6 +63,8 @@ std::vector<Shader*> shaderList;
 
 Shader directionalShadowShader;
 Shader omniShadowShader;
+
+Skybox skybox;
 
 GLfloat girlAngle = 0.0f;
 GLfloat girlRotationSpeed = 0.0f;
@@ -237,8 +240,18 @@ void OmniShadowMapPass(PointLight* light) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RenderPass(glm::mat4 projMatrix, glm::mat4 viewMatrix) {
+void RenderPass(glm::mat4 projectionMatrix, glm::mat4 viewMatrix) {
 
+	glViewport(0, 0, WIDTH, HEIGHT);
+
+	// Clear window
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Draw skybox (should be after clearing and before drawing anything else)
+	skybox.Draw(viewMatrix, projectionMatrix);
+
+	// Using shader
 	shaderList[0]->UseShader();
 
 	// World uniform values
@@ -251,13 +264,7 @@ void RenderPass(glm::mat4 projMatrix, glm::mat4 viewMatrix) {
 	uniformSpecularIntensity = shaderList[0]->GetSpecularIntensityLocation();
 	uniformShininess = shaderList[0]->GetShininessLocation();
 
-	glViewport(0, 0, WIDTH, HEIGHT);
-
-	// Clear window
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projMatrix));
+	glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 	glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniform3f(uniformEyePosition, camera->GetPosition().x, camera->GetPosition().y, camera->GetPosition().z);
 
@@ -307,9 +314,9 @@ int main() {
 
 	mainLight = DirectionalLight(
 		2048.0f, 2048.0f,
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		0.0f, 0.0f,
-		glm::vec3(0.0f, -15.0f, -10.0f));
+		glm::vec3(1.0f, 0.5f, 0.3f),
+		0.1f, 0.8f,
+		glm::vec3(-10.0f, -12.0f, 15.0f));
 
 	pointLights[pointLightCount] = PointLight(
 		1024.0f, 1024.0f,
@@ -318,7 +325,7 @@ int main() {
 		0.0f, 1.0f,
 		glm::vec3(-4.0, 0.0f, 0.0f),
 		0.3f, 0.2f, 0.1f);
-	pointLightCount++;
+	//pointLightCount++;
 
 	pointLights[pointLightCount] = PointLight(
 		1024.0f, 1024.0f,
@@ -327,7 +334,7 @@ int main() {
 		0.0f, 1.0f,
 		glm::vec3(4.0, 2.0f, 0.0f),
 		0.3f, 0.1f, 0.1f);
-	pointLightCount++;
+	//pointLightCount++;
 
 	spotLights[0] = SpotLight(
 		1024.0f, 1024.0f,
@@ -350,6 +357,16 @@ int main() {
 		1.0f, 0.0f, 0.0f,
 		20.0f);
 	spotLightCount++;
+
+	std::vector<std::string> skyboxFaces;
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudRight.hdr");
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudLeft.hdr");
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudTop.hdr");
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudBottom.hdr");
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudBack.hdr");
+	skyboxFaces.push_back("Textures/Skybox/CosmicCoolCloudFront.hdr");
+
+	skybox = Skybox(skyboxFaces);
 
 	glm::mat4 projection = glm::perspective(glm::radians(60.0f), mainWindow->GetBufferWidth() / mainWindow->GetBufferHeight(), 0.1f, 100.0f);
 

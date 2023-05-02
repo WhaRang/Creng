@@ -1,8 +1,8 @@
 #pragma once
 
-#include <GL\glew.h>
+#include <GL/glew.h>
 
-#include "stb_image.h"
+#include "Resources.h"
 
 
 class Texture {

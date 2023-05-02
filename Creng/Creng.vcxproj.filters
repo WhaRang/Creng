@@ -46,6 +46,9 @@
     <ClCompile Include="Time.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -91,6 +94,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Time.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Skybox.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
